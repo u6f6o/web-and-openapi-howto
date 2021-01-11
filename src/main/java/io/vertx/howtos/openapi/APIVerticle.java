@@ -9,6 +9,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.AuthenticationHandler;
 import io.vertx.ext.web.openapi.RouterBuilder;
 import io.vertx.ext.web.validation.RequestParameters;
 import io.vertx.ext.web.validation.ValidationHandler;
@@ -21,6 +22,13 @@ import java.util.Optional;
 public class APIVerticle extends AbstractVerticle {
 
   private HttpServer server;
+  private AuthenticationHandler foobarAuth1;
+  private AuthenticationHandler foobarAuth2;
+
+  public APIVerticle(AuthenticationHandler foobarAuth1, AuthenticationHandler foobarAuth2) {
+    this.foobarAuth1 = foobarAuth1;
+    this.foobarAuth2 = foobarAuth2;
+  }
 
   final List<JsonObject> pets = new ArrayList<>(Arrays.asList(
     new JsonObject().put("id", 1).put("name", "Fufi").put("tag", "ABC"),
@@ -34,6 +42,10 @@ public class APIVerticle extends AbstractVerticle {
       .onSuccess(routerBuilder -> {
         // Add routes handlers
         // tag::listPetsHandler[]
+
+        routerBuilder.securityHandler("FoobarAuth1", foobarAuth1);
+        routerBuilder.securityHandler("FoobarAuth2", foobarAuth2);
+
         routerBuilder.operation("listPets").handler(routingContext ->
           routingContext
             .response() // <1>
@@ -41,39 +53,7 @@ public class APIVerticle extends AbstractVerticle {
             .putHeader(HttpHeaders.CONTENT_TYPE, "application/json") // <2>
             .end(new JsonArray(getAllPets()).encode()) // <3>
         );
-        // end::listPetsHandler[]
-        // tag::createPetsHandler[]
-        routerBuilder.operation("createPets").handler(routingContext -> {
-          RequestParameters params = routingContext.get(ValidationHandler.REQUEST_CONTEXT_KEY); // <1>
-          JsonObject pet = params.body().getJsonObject(); // <2>
-          addPet(pet);
-          routingContext
-            .response()
-            .setStatusCode(200)
-            .end(); // <3>
-        });
-        // end::createPetsHandler[]
-        // tag::showPetByIdHandler[]
-        routerBuilder.operation("showPetById").handler(routingContext -> {
-          RequestParameters params = routingContext.get("parsedParameters"); // <1>
-          Integer id = params.pathParameter("petId").getInteger(); // <2>
-          Optional<JsonObject> pet = getAllPets()
-            .stream()
-            .filter(p -> p.getInteger("id").equals(id))
-            .findFirst(); // <3>
-          if (pet.isPresent())
-            routingContext
-              .response()
-              .setStatusCode(200)
-              .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-              .end(pet.get().encode()); // <4>
-          else
-            routingContext.fail(404, new Exception("Pet not found")); // <5>
-        });
-        // end::showPetByIdHandler[]
 
-        // Generate the router
-        // tag::routerGen[]
         Router router = routerBuilder.createRouter(); // <1>
         router.errorHandler(404, routingContext -> { // <2>
           JsonObject errorObject = new JsonObject() // <3>
@@ -117,10 +97,10 @@ public class APIVerticle extends AbstractVerticle {
     this.server.close();
   }
 
-  public static void main(String[] args) {
-    Vertx vertx = Vertx.vertx();
-    vertx.deployVerticle(new APIVerticle());
-  }
+//  public static void main(String[] args) {
+//    Vertx vertx = Vertx.vertx();
+//    vertx.deployVerticle(new APIVerticle());
+//  }
 
   private List<JsonObject> getAllPets() {
     return this.pets;

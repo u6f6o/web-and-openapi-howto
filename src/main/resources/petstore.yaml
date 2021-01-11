@@ -11,6 +11,9 @@ paths:
     get:
       summary: List all pets
       operationId: listPets
+      security:
+        - FoobarAuth1: [ ]
+          FoobarAuth2: [ ]
       tags:
         - pets
       responses:
@@ -26,52 +29,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-    post:
-      summary: Create a pet
-      operationId: createPets
-      tags:
-        - pets
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Pet"
-      responses:
-        '201':
-          description: Null response
-        default:
-          description: unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-  /pets/{petId}:
-    get:
-      summary: Info for a specific pet
-      operationId: showPetById
-      tags:
-        - pets
-      parameters:
-        - name: petId
-          in: path
-          required: true
-          description: The id of the pet to retrieve
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Expected response to a valid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Pets"
-        default:
-          description: unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
 components:
+  securitySchemes:
+    FoobarAuth1:
+      type: http
+      scheme: bearer
+    FoobarAuth2:
+      type: apiKey
+      in: header
+      name: X-Device-Token
   schemas:
     Pet:
       required:
